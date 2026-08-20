@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/hotel_provider.dart';
@@ -15,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
-  
+
   double? _maxPrice;
   double? _minRating;
   String? _amenity;
@@ -23,8 +25,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HotelProvider>(context, listen: false).fetchHotels();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      final provider = Provider.of<HotelProvider>(context, listen: false);
+
+      await provider.loginToReRum(
+        username: 'YOUR_RERUM_USERNAME',
+        password: 'YOUR_RERUM_PASSWORD',
+      );
     });
   }
 
@@ -48,13 +58,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // void _onSearch(String query) {
+  //   Provider.of<HotelProvider>(context, listen: false).fetchHotels(
+  //     query: query,
+  //     maxPrice: _maxPrice,
+  //     minRating: _minRating,
+  //     amenity: _amenity,
+  //   );
+  // }
+  Timer? _searchTimer;
+
   void _onSearch(String query) {
-    Provider.of<HotelProvider>(context, listen: false).fetchHotels(
-      query: query,
-      maxPrice: _maxPrice,
-      minRating: _minRating,
-      amenity: _amenity,
-    );
+    _searchTimer?.cancel();
+
+    _searchTimer = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+
+      Provider.of<HotelProvider>(context, listen: false).fetchHotels(
+        query: query,
+        maxPrice: _maxPrice,
+        minRating: _minRating,
+        amenity: _amenity,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchTimer?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -67,11 +100,17 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.favorite),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FavoritesScreen())),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => FavoritesScreen()),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.book),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BookingsScreen())),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => BookingsScreen()),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -94,7 +133,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search by property name...',
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onChanged: _onSearch,
                   ),
@@ -117,27 +158,30 @@ class _HomeScreenState extends State<HomeScreen> {
             child: hotelProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : hotelProvider.error != null
-                    ? Center(child: Text(hotelProvider.error!))
-                    : hotelProvider.hotels.isEmpty
-                        ? const Center(child: Text('No hotels found.'))
-                        : RefreshIndicator(
-                            onRefresh: () => hotelProvider.fetchHotels(),
-                            child: ListView.builder(
-                              itemCount: hotelProvider.hotels.length,
-                              itemBuilder: (context, index) {
-                                final hotel = hotelProvider.hotels[index];
-                                return HotelCard(
-                                  hotel: hotel,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => HotelDetailsScreen(hotel: hotel)),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
+                ? Center(child: Text("Server error 403"))
+                : hotelProvider.hotels.isEmpty
+                ? const Center(child: Text('No hotels found.'))
+                : RefreshIndicator(
+                    onRefresh: () => hotelProvider.fetchHotels(),
+                    child: ListView.builder(
+                      itemCount: hotelProvider.hotels.length,
+                      itemBuilder: (context, index) {
+                        final hotel = hotelProvider.hotels[index];
+                        return HotelCard(
+                          hotel: hotel,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    HotelDetailsScreen(hotelId: hotel.id),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

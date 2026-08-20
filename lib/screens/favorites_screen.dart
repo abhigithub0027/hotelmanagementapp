@@ -17,7 +17,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uid = Provider.of<AuthProvider>(context, listen: false).user?.uid;
       if (uid != null) {
-        Provider.of<FavoriteProvider>(context, listen: false).listenToFavorites(uid);
+        Provider.of<FavoriteProvider>(
+          context,
+          listen: false,
+        ).listenToFavorites(uid);
       }
     });
   }
@@ -31,22 +34,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       body: favProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : favProvider.favorites.isEmpty
-              ? const Center(child: Text('No favorites yet.'))
-              : ListView.builder(
-                  itemCount: favProvider.favorites.length,
-                  itemBuilder: (context, index) {
-                    final hotel = favProvider.favorites[index];
-                    return HotelCard(
-                      hotel: hotel,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => HotelDetailsScreen(hotel: hotel)),
-                        );
-                      },
+          ? const Center(child: Text('No favorites yet.'))
+          : ListView.builder(
+              itemCount: favProvider.favorites.length,
+              itemBuilder: (context, index) {
+                final hotel = favProvider.favorites[index];
+                return HotelCard(
+                  hotel: hotel,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HotelDetailsScreen(hotelId: hotel.id),
+                      ),
                     );
                   },
-                ),
+                );
+              },
+            ),
     );
   }
 }

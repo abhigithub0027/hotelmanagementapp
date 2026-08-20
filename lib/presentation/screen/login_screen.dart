@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import 'home_screen.dart';
-import 'login_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../../screens/home_screen.dart';
+import '../../screens/register_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
+class LoginScreen extends StatefulWidget {
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  void _register() async {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      final success = await auth.register(
+      final success = await auth.login(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text.trim(),
       );
@@ -25,13 +25,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => LoginScreen()),
+          MaterialPageRoute(builder: (_) => HomeScreen()),
         );
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(auth.error ?? 'Registration failed')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(auth.error ?? 'Login failed')));
       }
     }
   }
@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final auth = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -65,19 +65,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
-                validator: (v) => v!.length < 6 ? 'Password too short' : null,
+                validator: (v) => v!.isEmpty ? 'Enter password' : null,
               ),
               const SizedBox(height: 24),
               if (auth.isLoading)
                 const CircularProgressIndicator()
               else
                 ElevatedButton(
-                  onPressed: _register,
+                  onPressed: _login,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  child: const Text('Register'),
+                  child: const Text('Login'),
                 ),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RegisterScreen()),
+                ),
+                child: const Text('Don\'t have an account? Register'),
+              ),
             ],
           ),
         ),
